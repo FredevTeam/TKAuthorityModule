@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'TKAuthorityModule_Example' do
+  pod 'TKAuthorityModule', :path => '../'
+
+  target 'TKAuthorityModule_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
