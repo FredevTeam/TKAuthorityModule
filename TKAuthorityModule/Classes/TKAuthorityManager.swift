@@ -329,7 +329,6 @@ extension AuthorityManager {
             }
             break
         }
-        
     }
 }
 
