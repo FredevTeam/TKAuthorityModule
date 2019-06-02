@@ -38,8 +38,6 @@ extension EKAuthorizationStatus : AuthorityProtocol{}
 @available(iOS 10.0, *)
 extension UNAuthorizationStatus : AuthorityProtocol {}
 
-extension UIRemoteNotificationType : AuthorityProtocol{}
-
 extension LAError.Code : AuthorityProtocol{}
 
 extension CLAuthorizationStatus : AuthorityProtocol{}
@@ -64,4 +62,4 @@ extension CBPeripheralManagerAuthorizationStatus : AuthorityProtocol{}
 @available(iOS 10.0, *)
 extension SFSpeechRecognizerAuthorizationStatus : AuthorityProtocol{}
 
-
+extension UIUserNotificationType : AuthorityProtocol {}

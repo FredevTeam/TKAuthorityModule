@@ -38,6 +38,11 @@ enum AuthorityURLType : String {
 }
 class Auxiliary:NSObject {
     fileprivate var block:ReturnBlock?
+    fileprivate weak var manager: AuthorityManager?
+
+    deinit {
+        debugPrint("对象释放了")
+    }
 }
 private let messageString = "Please go to the Settings Center to open the permissions."
 private let enterString = "Enter"
@@ -45,13 +50,23 @@ private let cancelString = "Cancel"
 
 
 public class AuthorityManager {
-    private var message: String
+    fileprivate var message: String
+
     public static let shared = AuthorityManager(message: nil)
-    fileprivate var localtionManager : CLLocationManager?
-    fileprivate var auxiliary: Auxiliary = Auxiliary()
+
+    private var localtionManager : CLLocationManager?
+    private var  centralManager:CBCentralManager?
+
+    private var auxiliary: Auxiliary = Auxiliary()
+
 
     public init(message: String? = nil) {
         self.message = message ?? messageString
+        self.auxiliary.manager = self
+    }
+
+    deinit {
+        debugPrint("对象释放了")
     }
 }
 
@@ -74,7 +89,7 @@ extension AuthorityManager {
         }
         
         let read = NSSet(array:[
-            HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
+            HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth) as Any,
             HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.bloodType) as Any,
             HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex) as Any,
             HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass) as Any,
@@ -207,6 +222,7 @@ extension AuthorityManager {
     /// 相册权限
     ///
     /// - Parameter block: 回调
+    @available(iOS, introduced: 4.0, deprecated: 9.0, message: "Use photoLibraryAuthority instead")
     public func assetsLibraryAuthority(block: ReturnBlock?) {
         let status = ALAssetsLibrary.authorizationStatus()
         switch status {
@@ -220,7 +236,10 @@ extension AuthorityManager {
             break
         //提示用户授权
         case .notDetermined:
-            _ = ALAssetsLibrary.authorizationStatus()
+            let assetLibrary = ALAssetsLibrary.init()
+            assetLibrary.enumerateGroups(withTypes: ALAssetsGroupType(ALAssetsGroupAlbum), using: { (group, _) in
+            }) { (error) in
+            }
             break
         case .restricted:
             enterSetting {
@@ -317,38 +336,35 @@ extension AuthorityManager {
 // MARK: - 蓝牙
 extension AuthorityManager {
     public func bluetoothAuthority(block: ReturnBlock?){
-        let status = CBPeripheralManager.authorizationStatus()
-        switch status {
-        case .authorized:
-            block?(true,status, nil)
-            break
-        case .denied:
-            enterSetting {
-                block?(false, status, nil)
+        self.centralManager = CBCentralManager.init(delegate: self.auxiliary, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey:true])
+        self.auxiliary.block = block
+    }
+}
+
+extension Auxiliary : CBCentralManagerDelegate {
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .unknown:
+            fallthrough
+        case .resetting:
+            fallthrough
+        case .unsupported:
+            fallthrough
+        case .unauthorized:
+            fallthrough
+        case .poweredOff:
+            showAlert(message: self.manager?.message ?? messageString, enterBlock: { (_) in
+                openUrl(type: nil)
+            }) { (_) in
+                self.block?(false,central.state, nil)
             }
             break
-        case .notDetermined:
-            let state = CBCentralManager.init().state
-            
-            switch state {
-            case .unauthorized:
-                fallthrough
-            case .unsupported:
-                fallthrough
-            case .unknown:
-                block?(false, state, nil)
-            default:
-                block?(true, state, nil)
-            }
-            break
-        case .restricted:
-            enterSetting {
-                block?(false, status, nil)
-            }
-            break
+        case .poweredOn:
+            self.block?(true, central.state, nil)
         }
     }
 }
+
 
 // MARK: - 语音识别
 extension AuthorityManager {
@@ -380,9 +396,18 @@ extension AuthorityManager {
 
 // MARK: - Notification
 extension AuthorityManager {
-    public func notificationRomateAuthority(block: ReturnBlock?){
-        let type = UIApplication.shared.isRegisteredForRemoteNotifications
-        block?(type, UIApplication.shared.enabledRemoteNotificationTypes(),nil)
+    @available(iOS 8, *)
+    public func notificationRomateAuthority(block: ReturnBlock?) {
+        if !UIApplication.shared.isRegisteredForRemoteNotifications {
+            let type = UIApplication.shared.currentUserNotificationSettings?.types
+            if  type == UIUserNotificationType.init(rawValue: 0) {
+                enterSetting {
+                    block?(false,type, nil)
+                }
+            }else {
+                block?(true, type, nil)
+            }
+        }
     }
     
     @available(iOS 10.0, *)
@@ -394,8 +419,10 @@ extension AuthorityManager {
                 block?(true, UNAuthorizationStatus.authorized, nil)
                 break
             case .denied:
-                self.enterSetting {
-                    block?(false, settings.authorizationStatus, nil)
+                DispatchQueue.main.async {
+                    self.enterSetting {
+                        block?(false, settings.authorizationStatus, nil)
+                    }
                 }
                 break
             case .notDetermined:
@@ -416,34 +443,44 @@ extension AuthorityManager {
 }
 // MARK: - Face Id / Touch Id
 extension AuthorityManager {
-    
+    public enum TouchIDAuthority:Error {
+        case notSupport
+        public var localizedDescription: String {
+            return "not support Touch ID or Face ID"
+        }
+    }
     /// 是否支持
     ///
     /// - Parameter block:
     public func faceOrTouchIDAuthority(block: ReturnBlock?){
         let context = LAContext()
         var error:NSError?
-        if !context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            switch Int32(error?.code ?? 0) {
-            // 未设置密码
-            case kLAErrorPasscodeNotSet:
-                block?(false, LAError.passcodeNotSet, error)
-                break
-            // 不可用 未打开
-            case kLAErrorTouchIDNotAvailable:
-                block?(false, LAError.touchIDNotAvailable, error)
-                break
-            // 用户未录入
-            case kLAErrorTouchIDNotEnrolled:
-                block?(false, LAError.touchIDNotEnrolled, error)
-                break
-            default:
-                block?(false, nil, error)
-                break
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            if let e = error {
+                block?(false, nil,e)
+            }else {
+                block?(true, nil, nil)
             }
+        }else {
+            block?(false,nil,TouchIDAuthority.notSupport)
         }
-        block?(true,nil,nil)
     }
+    //                switch Int32(e.code) {
+    //                // 未设置密码
+    //                case kLAErrorPasscodeNotSet:
+    //                    block?(false, LAError.passcodeNotSet, error)
+    //                    return
+    //                // 不可用 未打开
+    //                case kLAErrorTouchIDNotAvailable:
+    //                    block?(false, LAError.touchIDNotAvailable, error)
+    //                    return
+    //                // 用户未录入
+    //                case kLAErrorTouchIDNotEnrolled:
+    //                    block?(false, LAError.touchIDNotEnrolled, error)
+    //                    return
+    //                default:
+    //                    break
+    //                }
 }
 
 // MARK: - 定位权限
@@ -599,6 +636,7 @@ extension AuthorityManager {
             block?(false, nil , NSError(domain: "is not support apple pay,pleace upload system", code: 0, userInfo: nil))
             return
         }
+        block?(true, nil, nil)
     }
 }
 
@@ -608,18 +646,24 @@ extension AuthorityManager {
     /// - Parameter block: 权限回调
     @available(iOS 9.0, *)
     public func coreTelephonyAuthority(block: ReturnBlock?) {
+        
         let cellularData = CTCellularData()
-        let state = cellularData.restrictedState
-        switch state {
-        case .restrictedStateUnknown:
-            break
-        case .restricted:
-            break
-        case .notRestricted:
-            cellularData.cellularDataRestrictionDidUpdateNotifier = {(state) in
-                
+        cellularData.cellularDataRestrictionDidUpdateNotifier = {(state) in
+            switch state {
+            case .restrictedStateUnknown:
+                self.enterSetting {
+                    block?(false, nil, nil)
+                }
+                break
+            case .restricted:
+                self.enterSetting {
+                    block?(false, nil, nil)
+                }
+                break
+            case .notRestricted:
+                block?(true, nil, nil)
+                break
             }
-            break
         }
     }
 }
@@ -628,7 +672,7 @@ extension AuthorityManager {
 
 // MARK: - private method
 extension AuthorityManager {
-    private func enterSetting(block:@escaping () -> Void) {
+    private func enterSetting(block:@escaping() -> Void) {
         showAlert(message: message, enterBlock: { (_) in
             openUrl(type: nil)
         }) { (_) in
