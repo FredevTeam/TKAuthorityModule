@@ -30,7 +30,7 @@ import PassKit
 
 
 public typealias ReturnBlock = (_ result: Bool, _ authority: AuthorityProtocol?, _ error: Error?) -> Void
-fileprivate let version = Float(UIDevice.current.systemVersion) ?? 0.0
+private let version = Float(UIDevice.current.systemVersion) ?? 0.0
 
 enum AuthorityURLType : String {
     case camera = "prefs:root=Photos"
@@ -39,10 +39,20 @@ enum AuthorityURLType : String {
 class Auxiliary:NSObject {
     fileprivate var block:ReturnBlock?
 }
+private let messageString = "Please go to the Settings Center to open the permissions."
+private let enterString = "Enter"
+private let cancelString = "Cancel"
+
+
 public class AuthorityManager {
-    public static let shared = AuthorityManager()
+    private var message: String
+    public static let shared = AuthorityManager(message: nil)
     fileprivate var localtionManager : CLLocationManager?
     fileprivate var auxiliary: Auxiliary = Auxiliary()
+
+    public init(message: String? = nil) {
+        self.message = message ?? messageString
+    }
 }
 
 // MARK: - 健康
@@ -94,9 +104,7 @@ extension AuthorityManager {
             block?(true, status, nil)
             break
         case .denied:
-            showAlert(title: "提醒", message: "跳转到设置中心打开权限", cancelTitle: "取消", enterTitle: "跳转", enterBlock: { (action ) in
-                self.openUrl(type: .music)
-            }) { (action ) in
+            enterSetting {
                 block?(false, status, nil)
             }
             break
@@ -106,9 +114,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
-            showAlert(title: "", message: "", cancelTitle: nil, enterTitle: "", enterBlock: { (action ) in
-                
-            }, cancelBlock: nil)
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -124,6 +132,9 @@ extension AuthorityManager {
             block?(true, status, nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { (result) in
@@ -131,6 +142,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
         
@@ -142,6 +156,9 @@ extension AuthorityManager {
             block?(true, status,nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { (result) in
@@ -149,6 +166,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -164,6 +184,9 @@ extension AuthorityManager {
             block?(true, status, nil )
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             MPMediaLibrary.requestAuthorization { (status) in
@@ -171,6 +194,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -183,7 +209,25 @@ extension AuthorityManager {
     /// - Parameter block: 回调
     public func assetsLibraryAuthority(block: ReturnBlock?) {
         let status = ALAssetsLibrary.authorizationStatus()
-        block?(status == .authorized ? true : false , status, nil)
+        switch status {
+        case .authorized:
+            block?(true, status, nil)
+            break
+        case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
+            break
+        //提示用户授权
+        case .notDetermined:
+            _ = ALAssetsLibrary.authorizationStatus()
+            break
+        case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
+            break
+        }
     }
     
     /// 相册权限
@@ -197,7 +241,9 @@ extension AuthorityManager {
             block?(true, status, nil)
             break
         case .denied:
-            // 提示用户修改权限
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         //提示用户授权
         case .notDetermined:
@@ -206,7 +252,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
-            // 提示用户不可修改权限
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
         
@@ -221,6 +269,9 @@ extension AuthorityManager {
             block?(true, status,nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             let bookRef = ABAddressBookCreate()
@@ -229,6 +280,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -241,6 +295,9 @@ extension AuthorityManager {
             block?(true, status, nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             CNContactStore().requestAccess(for: .contacts) { (result, error) in
@@ -248,6 +305,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
         
@@ -263,6 +323,9 @@ extension AuthorityManager {
             block?(true,status, nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             let state = CBCentralManager.init().state
@@ -273,12 +336,15 @@ extension AuthorityManager {
             case .unsupported:
                 fallthrough
             case .unknown:
-                block?(false, state, nil )
+                block?(false, state, nil)
             default:
                 block?(true, state, nil)
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -294,6 +360,9 @@ extension AuthorityManager {
             block?(true, status,nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             SFSpeechRecognizer.requestAuthorization { (status) in
@@ -301,6 +370,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -322,10 +394,20 @@ extension AuthorityManager {
                 block?(true, UNAuthorizationStatus.authorized, nil)
                 break
             case .denied:
+                self.enterSetting {
+                    block?(false, settings.authorizationStatus, nil)
+                }
                 break
             case .notDetermined:
                 center.requestAuthorization(options: options) { (result , error) in
                     block?(result, result == true ? UNAuthorizationStatus.authorized : .notDetermined, error)
+                }
+                break
+            case .provisional:
+                if #available(iOS 12.0, *) {
+                    block?(true, UNAuthorizationStatus.provisional, nil)
+                } else {
+                    // Fallback on earlier versions
                 }
                 break
             }
@@ -383,6 +465,9 @@ extension AuthorityManager {
         let status = CLLocationManager.authorizationStatus()
         switch status {
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             if type == .Always {
@@ -392,12 +477,15 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .authorizedAlways:
-            block?(true, status, nil )
+            block?(true, status, nil)
             break
         case .authorizedWhenInUse:
-            block?(true, status, nil )
+            block?(true, status, nil)
             break
         }
     }
@@ -419,6 +507,9 @@ extension AuthorityManager {
             block?(true, status, nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             EKEventStore.init().requestAccess(to: .reminder) { (result, error) in
@@ -426,6 +517,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -436,6 +530,9 @@ extension AuthorityManager {
             block?(true, status,nil)
             break
         case .denied:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         case .notDetermined:
             EKEventStore.init().requestAccess(to: .event) { (result, error) in
@@ -443,6 +540,9 @@ extension AuthorityManager {
             }
             break
         case .restricted:
+            enterSetting {
+                block?(false, status, nil)
+            }
             break
         }
     }
@@ -499,7 +599,6 @@ extension AuthorityManager {
             block?(false, nil , NSError(domain: "is not support apple pay,pleace upload system", code: 0, userInfo: nil))
             return
         }
-        
     }
 }
 
@@ -509,10 +608,6 @@ extension AuthorityManager {
     /// - Parameter block: 权限回调
     @available(iOS 9.0, *)
     public func coreTelephonyAuthority(block: ReturnBlock?) {
-//        let interface =
-        
-        
-        
         let cellularData = CTCellularData()
         let state = cellularData.restrictedState
         switch state {
@@ -529,31 +624,43 @@ extension AuthorityManager {
     }
 }
 
+
+
 // MARK: - private method
 extension AuthorityManager {
-    fileprivate func openUrl(type: AuthorityURLType) {
-        if #available(iOS 10.0, *) {
-            if UIApplication.shared.canOpenURL(URL(string: UIApplicationOpenSettingsURLString)!) {
-                UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!, options: [:], completionHandler: nil)
-            }
-        }else {
-            let url = URL(string: type.rawValue) ?? URL(string: "")!
-            if UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.openURL(url)
-            }
+    private func enterSetting(block:@escaping () -> Void) {
+        showAlert(message: message, enterBlock: { (_) in
+            openUrl(type: nil)
+        }) { (_) in
+            block()
         }
-    }
-    
-    fileprivate func showAlert(title: String, message: String,cancelTitle:String?, enterTitle: String, enterBlock: @escaping ((_ action: UIAlertAction)-> Void),cancelBlock: ((_ action: UIAlertAction)-> Void)?) {
-        let alertVC =  UIAlertController(title: title, message: message, preferredStyle: .alert)
-        if cancelTitle != nil {
-            alertVC.addAction(UIAlertAction(title: cancelTitle, style: .cancel, handler: cancelBlock))
-        }
-        alertVC.addAction(UIAlertAction(title: enterTitle, style: .default, handler: enterBlock))
-        let vc = UIApplication.shared.keyWindow?.rootViewController
-        vc?.present(alertVC, animated: true, completion: nil)
     }
 }
 
+
+
+fileprivate func openUrl(type: AuthorityURLType?) {
+    if #available(iOS 10.0, *) {
+        let url = URL(string: UIApplicationOpenSettingsURLString) ?? URL.init(string: "")!
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }else {
+        let url = URL(string: type?.rawValue ?? UIApplicationOpenSettingsURLString) ?? URL(string: "")!
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.openURL(url)
+        }
+    }
+}
+
+fileprivate func showAlert(title: String? = nil, message: String,cancelTitle:String? = cancelString, enterTitle: String = enterString, enterBlock: @escaping ((_ action: UIAlertAction)-> Void),cancelBlock: ((_ action: UIAlertAction)-> Void)?) {
+    let alertVC =  UIAlertController(title: title, message: message, preferredStyle: .alert)
+    if let cancel = cancelTitle {
+        alertVC.addAction(UIAlertAction(title: cancel, style: .cancel, handler: cancelBlock))
+    }
+    alertVC.addAction(UIAlertAction(title: enterTitle, style: .default, handler: enterBlock))
+    let vc = UIApplication.shared.keyWindow?.rootViewController
+    vc?.present(alertVC, animated: true, completion: nil)
+}
 
 

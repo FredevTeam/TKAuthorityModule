@@ -23,6 +23,7 @@ import AssetsLibrary
 import Photos
 import Speech
 
+
 public protocol AuthorityProtocol {}
 
 
@@ -30,7 +31,6 @@ extension PHAuthorizationStatus: AuthorityProtocol{}
 extension ABAuthorizationStatus: AuthorityProtocol{}
 extension CTCellularDataRestrictedState: AuthorityProtocol{}
 extension AVAuthorizationStatus: AuthorityProtocol{}
-
 
 
 extension EKAuthorizationStatus : AuthorityProtocol{}
