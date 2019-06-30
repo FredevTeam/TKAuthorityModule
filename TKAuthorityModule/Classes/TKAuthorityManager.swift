@@ -77,9 +77,18 @@ extension AuthorityManager {
             block?(false, nil , NSError(domain: "is not available", code: 0, userInfo: nil))
             return
         }
-        let type = HKQuantityType.quantityType(forIdentifier: identifier)
-        let status = HKHealthStore.init().authorizationStatus(for: type!)
-        block?(status == .sharingAuthorized ? true : false, status , nil)
+        guard let type = HKQuantityType.quantityType(forIdentifier: identifier) else {
+            block?(false , nil , NSError.init(domain: "\(identifier) is not support", code: 0, userInfo: nil))
+            return
+        }
+        let status = HKHealthStore.init().authorizationStatus(for: type)
+        if status == .notDetermined {
+            HKHealthStore.init().requestAuthorization(toShare: NSSet.init(array: [type]) as? Set<HKSampleType>, read: NSSet.init(array: [type]) as? Set<HKObjectType>) { (result, error) in
+                 block?(result , nil , error)
+            }
+        }else {
+            block?(status == .sharingAuthorized ? true : false, status , nil)
+        }
     }
     
     public func healthAuthority(block: ReturnBlock?){
@@ -98,12 +107,14 @@ extension AuthorityManager {
             ])
         
         let write = NSSet(array:[
-            HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMassIndex) as Any,
+            HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount) as Any,
             HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.activeEnergyBurned) as Any,
             HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.distanceWalkingRunning) as Any,
             HKQuantityType.workoutType()
             ])
-        HKHealthStore.init().requestAuthorization(toShare: write as? Set<HKSampleType>, read: read as? Set<HKObjectType>) { (result , error) in
+
+        let store = HKHealthStore.init()
+        store.requestAuthorization(toShare: read as? Set<HKSampleType>, read: write as? Set<HKObjectType>) { (result, error) in
             block?(result , nil , error)
         }
     }
@@ -124,9 +135,9 @@ extension AuthorityManager {
             }
             break
         case .notDetermined:
-            SKCloudServiceController.requestAuthorization { (status) in
-                block?(status == .authorized ? true : false, status, nil)
-            }
+                SKCloudServiceController.requestAuthorization { (status) in
+                    block?(status == .authorized ? true : false, status, nil)
+                }
             break
         case .restricted:
             enterSetting {
@@ -395,20 +406,21 @@ extension AuthorityManager {
 
 // MARK: - Notification
 extension AuthorityManager {
-    @available(iOS 8, *)
-    public func notificationRomateAuthority(block: ReturnBlock?) {
-        if !UIApplication.shared.isRegisteredForRemoteNotifications {
-            let type = UIApplication.shared.currentUserNotificationSettings?.types
-            if  type == UIUserNotificationType.init(rawValue: 0) {
-                enterSetting {
-                    block?(false,type, nil)
-                }
-            }else {
-                block?(true, type, nil)
-            }
-        }
-    }
-    
+//    @available(iOS 8, *)
+//    public func notificationRomateAuthority(block: ReturnBlock?) {
+//        if !UIApplication.shared.isRegisteredForRemoteNotifications {
+//            let type = UIApplication.shared.currentUserNotificationSettings?.types
+//            if  type == UIUserNotificationType.init(rawValue: 0) {
+//
+//                enterSetting {
+//                    block?(false,type, nil)
+//                }
+//            }else {
+//                block?(true, type, nil)
+//            }
+//        }
+//    }
+//
     @available(iOS 10.0, *)
     public func notificationCenterAuthority(options: UNAuthorizationOptions,block: ReturnBlock?){
         let center = UNUserNotificationCenter.current()

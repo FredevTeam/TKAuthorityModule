@@ -30,6 +30,10 @@
 	<string>相机</string>
 	<key>NSContactsUsageDescription</key>
 	<string>通讯录</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>简况</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>健康</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>健康</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

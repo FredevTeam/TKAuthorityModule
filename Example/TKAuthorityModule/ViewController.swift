@@ -184,13 +184,14 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
                 // Fallback on earlier versions
             }
         case 12:
-            AuthorityManager.shared.notificationRomateAuthority { (result, status, error) in
-                if result {
-                    print("获取到权限")
-                }else {
-                    print("没有获取到权限")
-                }
-            }
+//            AuthorityManager.shared.notificationRomateAuthority { (result, status, error) in
+//                if result {
+//                    print("获取到权限")
+//                }else {
+//                    print("没有获取到权限")
+//                }
+//            }
+            break
         case 13:
             if #available(iOS 10.0, *) {
                 AuthorityManager.shared.notificationCenterAuthority(options: .badge) { (result, status, error) in
