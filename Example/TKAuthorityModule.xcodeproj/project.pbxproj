@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1081D71E2332882B006A7358 /* .jazzy.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 1081D71D2332882B006A7358 /* .jazzy.yaml */; };
 		10F3395622C8FF5D00589F46 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 10F3395522C8FF5D00589F46 /* HealthKit.framework */; };
 		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
 		607FACD81AFB9204008FA782 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD71AFB9204008FA782 /* ViewController.swift */; };
@@ -29,6 +30,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1081D71D2332882B006A7358 /* .jazzy.yaml */ = {isa = PBXFileReference; lastKnownFileType = text; path = .jazzy.yaml; sourceTree = "<group>"; };
 		10F3395522C8FF5D00589F46 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		10F3395722C8FF5D00589F46 /* TKAuthorityModule_Example.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TKAuthorityModule_Example.entitlements; sourceTree = "<group>"; };
 		122960A8836B5DB5372468FD /* Pods-TKAuthorityModule_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TKAuthorityModule_Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-TKAuthorityModule_Example/Pods-TKAuthorityModule_Example.release.xcconfig"; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 		607FACC71AFB9204008FA782 = {
 			isa = PBXGroup;
 			children = (
+				1081D71D2332882B006A7358 /* .jazzy.yaml */,
 				10F3395722C8FF5D00589F46 /* TKAuthorityModule_Example.entitlements */,
 				607FACF51AFB993E008FA782 /* Podspec Metadata */,
 				607FACD21AFB9204008FA782 /* Example for TKAuthorityModule */,
@@ -261,6 +264,7 @@
 			files = (
 				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
 				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
+				1081D71E2332882B006A7358 /* .jazzy.yaml in Resources */,
 				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
