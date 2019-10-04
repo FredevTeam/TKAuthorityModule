@@ -24,6 +24,7 @@ import Photos
 import Speech
 
 
+/// Authority Protocol
 public protocol AuthorityProtocol {}
 
 

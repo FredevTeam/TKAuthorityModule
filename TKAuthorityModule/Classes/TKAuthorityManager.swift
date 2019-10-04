@@ -29,13 +29,27 @@ import CoreNFC
 import PassKit
 
 
+
+/// 回调block
+/**
+ - Parameter result: 返回结果 True/ False
+ - Parameter authority: 权限类型
+ - Parameter error: 错误信息
+ - Return :
+
+ */
 public typealias ReturnBlock = (_ result: Bool, _ authority: AuthorityProtocol?, _ error: Error?) -> Void
 private let version = Float(UIDevice.current.systemVersion) ?? 0.0
 
+/// Authority URL Type
+///
+/// - camera: 相册/相机
+/// - music: 音乐
 enum AuthorityURLType : String {
     case camera = "prefs:root=Photos"
     case music = "prefs:root=MUSIC"
 }
+
 class Auxiliary:NSObject {
     fileprivate var block:ReturnBlock?
     fileprivate weak var manager: AuthorityManager?
@@ -49,9 +63,12 @@ private let enterString = "Enter"
 private let cancelString = "Cancel"
 
 
+/// Authority Manager
 public class AuthorityManager {
     fileprivate var message: String
 
+
+    /// shared
     public static let shared = AuthorityManager(message: nil)
 
     private var localtionManager : CLLocationManager?
@@ -60,6 +77,9 @@ public class AuthorityManager {
     private var auxiliary: Auxiliary = Auxiliary()
 
 
+    /// init
+    ///
+    /// - Parameter message: show message to  alert view (alertView 显示的提示消息)
     public init(message: String? = nil) {
         self.message = message ?? messageString
         self.auxiliary.manager = self
@@ -72,6 +92,12 @@ public class AuthorityManager {
 
 // MARK: - 健康
 extension AuthorityManager {
+
+    /// 健康
+    ///
+    /// - Parameters:
+    ///   - identifier: 健康类型 Identifier
+    ///   - block: 回调block
     public func healthAuthority(identifier:HKQuantityTypeIdentifier,block: ReturnBlock?){
         if !HKHealthStore.isHealthDataAvailable() {
             block?(false, nil , NSError(domain: "is not available", code: 0, userInfo: nil))
@@ -90,7 +116,11 @@ extension AuthorityManager {
             block?(status == .sharingAuthorized ? true : false, status , nil)
         }
     }
-    
+
+
+    /// 健康
+    ///
+    /// - Parameter block: 回调block
     public func healthAuthority(block: ReturnBlock?){
         if !HKHealthStore.isHealthDataAvailable() {
             block?(false, nil , NSError(domain: "is not available", code: 0, userInfo: nil))
@@ -122,7 +152,12 @@ extension AuthorityManager {
 
 // MARK: - 音乐
 extension AuthorityManager {
+
     @available(iOS 9.3, *)
+
+    /// 音乐
+    ///
+    /// - Parameter block: 回调block
     public func musicAuthority(block: ReturnBlock?){
         let status = SKCloudServiceController.authorizationStatus()
         switch status {
@@ -151,6 +186,10 @@ extension AuthorityManager {
 
 // MARK: - AVFoundation
 extension AuthorityManager {
+
+    /// 相机
+    ///
+    /// - Parameter block: 回调
     public func cameraAuthority(block: ReturnBlock?) {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
         switch status {
@@ -175,6 +214,10 @@ extension AuthorityManager {
         }
         
     }
+
+    /// 麦克风
+    ///
+    /// - Parameter block: 回调
     public func microphoneAuthority(block: ReturnBlock?) {
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
         switch status {
@@ -203,6 +246,10 @@ extension AuthorityManager {
 // MARK: - 媒体库
 extension AuthorityManager {
     @available(iOS 9.3, *)
+
+    /// 相册/ 媒体库
+    ///
+    /// - Parameter block: 回调
     public func mediaAuthority(block: ReturnBlock?) {
         let status = MPMediaLibrary.authorizationStatus()
         switch status {
@@ -260,10 +307,12 @@ extension AuthorityManager {
         }
     }
     
-    /// 相册权限
-    ///
-    /// - Returns: 结果
+
     @available(iOS 8.0, *)
+
+    /// 相册
+    ///
+    /// - Parameter block: 回调
     public func photoLibraryAuthority(block: ReturnBlock?) {
         let status = PHPhotoLibrary.authorizationStatus()
         switch status {
@@ -292,6 +341,10 @@ extension AuthorityManager {
 }
 // MARK: - 通讯录
 extension AuthorityManager {
+
+    /// 通讯录
+    ///
+    /// - Parameter block: 回调
     public func addressBookAuthority(block: ReturnBlock?){
         let status = ABAddressBookGetAuthorizationStatus()
         switch status {
@@ -318,6 +371,10 @@ extension AuthorityManager {
     }
     
     @available(iOS 9.0, *)
+
+    /// 通讯录
+    ///
+    /// - Parameter block: 回调
     public func contactAuthority(block: ReturnBlock?){
         let status = CNContactStore.authorizationStatus(for: .contacts)
         switch status {
@@ -345,6 +402,10 @@ extension AuthorityManager {
 
 // MARK: - 蓝牙
 extension AuthorityManager {
+
+    /// 蓝牙
+    ///
+    /// - Parameter block: 回调
     public func bluetoothAuthority(block: ReturnBlock?){
         self.centralManager = CBCentralManager.init(delegate: self.auxiliary, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey:true])
         self.auxiliary.block = block
@@ -352,6 +413,10 @@ extension AuthorityManager {
 }
 
 extension Auxiliary : CBCentralManagerDelegate {
+
+    /// 蓝牙代理
+    ///
+    /// - Parameter central: 控制中心
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .unknown:
@@ -379,6 +444,10 @@ extension Auxiliary : CBCentralManagerDelegate {
 // MARK: - 语音识别
 extension AuthorityManager {
     @available(iOS 10.0, *)
+
+    /// 语音识别
+    ///
+    /// - Parameter block: 回调
     public func speechRecognitionAuthority(block: ReturnBlock?){
         let status = SFSpeechRecognizer.authorizationStatus()
         switch status {
@@ -422,6 +491,12 @@ extension AuthorityManager {
 //    }
 //
     @available(iOS 10.0, *)
+
+    /// 通知
+    ///
+    /// - Parameters:
+    ///   - options: UNAuthorizationOptions 枚举
+    ///   - block: 回调
     public func notificationCenterAuthority(options: UNAuthorizationOptions,block: ReturnBlock?){
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { (settings) in
@@ -454,8 +529,15 @@ extension AuthorityManager {
 }
 // MARK: - Face Id / Touch Id
 extension AuthorityManager {
+
+    /// Touch ID error Type
+
     public enum TouchIDAuthority:Error {
+
+        /// 不支持
         case notSupport
+
+        /// localizedDescription 描述
         public var localizedDescription: String {
             return "not support Touch ID or Face ID"
         }
@@ -496,11 +578,25 @@ extension AuthorityManager {
 
 // MARK: - 定位权限
 extension AuthorityManager {
+
+    /// 定位枚举
+    ///
+    /// - Always: 一直允许
+    /// - WhenInUse: 只有使用时允许
     public enum LocaltionType {
+
+        /// 一直允许
         case Always
+        
+        /// 使用时允许
         case WhenInUse
     }
     
+    /// 定位权限
+    ///
+    /// - Parameters:
+    ///   - type: 类型枚举 默认 一直允许
+    ///   - block: 回调
     public func locationAuthority(type:LocaltionType = .Always,block: ReturnBlock?){
         if !CLLocationManager.locationServicesEnabled() {
             block?(false, nil, NSError(domain: "service is not open", code: 0, userInfo: nil))
@@ -548,6 +644,10 @@ extension Auxiliary: CLLocationManagerDelegate {
 
 // MARK: - 日历提醒事件
 extension AuthorityManager {
+
+    /// 日历
+    ///
+    /// - Parameter block: 回调
     public func calendarAuthority(block: ReturnBlock?){
         let status = EKEventStore.authorizationStatus(for: .reminder)
         switch status {
@@ -571,6 +671,10 @@ extension AuthorityManager {
             break
         }
     }
+
+    /// 提醒事件
+    ///
+    /// - Parameter block: 回调
     public func remindEventAuthority(block: ReturnBlock?){
         let status = EKEventStore.authorizationStatus(for: .event)
         switch status {
@@ -601,6 +705,10 @@ extension AuthorityManager {
 // MARK: - NFC
 extension AuthorityManager {
     @available(iOS 11.0, *)
+
+    /// NFC
+    ///
+    /// - Parameter block: 回调
     public func nfcAuthority(block: ReturnBlock?){
         let _ = NFCNDEFReaderSession(delegate: self.auxiliary, queue: nil, invalidateAfterFirstRead: true)
         if !NFCNDEFReaderSession.readingAvailable {
@@ -625,6 +733,10 @@ extension Auxiliary: NFCNDEFReaderSessionDelegate {
 
 // MARK: - Wallet
 extension AuthorityManager {
+
+    /// Wallet
+    ///
+    /// - Parameter block: 回调
     public func walletAuthority(block: ReturnBlock?){
         if !PKPassLibrary.isPassLibraryAvailable() {
             block?(false, nil , NSError(domain: "is not support wallet", code: 0, userInfo: nil))
@@ -642,6 +754,10 @@ extension AuthorityManager {
 // MARK: - Apple Pay
 extension AuthorityManager {
     @available(iOS 10.0, *)
+
+    /// Apple Pay
+    ///
+    /// - Parameter block: 回调
     public func applePayAuthority(block: ReturnBlock?){
         if !PKPaymentAuthorizationController.canMakePayments() {
             block?(false, nil , NSError(domain: "is not support apple pay,pleace upload system", code: 0, userInfo: nil))
@@ -656,6 +772,10 @@ extension AuthorityManager {
     ///
     /// - Parameter block: 权限回调
     @available(iOS 9.0, *)
+
+    /// 网络
+    ///
+    /// - Parameter block: 回调
     public func coreTelephonyAuthority(block: ReturnBlock?) {
         
         let cellularData = CTCellularData()
