@@ -1,0 +1,10 @@
+---
+min_acl: private
+github_url: https://github.com/example/example.git
+readme: docs/README.md
+author: 抓猫的鱼
+clean:
+output: docs
+module: TKAuthorityModule
+xcodebuild_arguments: ["-workspace","TKAuthorityModule.xcworkspace",
+"-scheme","TKAuthorityModule","-sdk","iphonesimulator"]

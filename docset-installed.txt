@@ -1,0 +1,4 @@
+Documentation set was installed to Xcode!
+
+Path: /Users/akulaku/Library/Developer/Shared/Documentation/DocSets/com.taokan.tkauthoritymodule.TKAuthorityModule.docset
+Time: 2019-09-18 09:04:58 +0000
